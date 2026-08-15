@@ -1,0 +1,37 @@
+{
+	"name": "music-room-server",
+	"version": "1.0.0",
+	"private": true,
+	"type": "module",
+	"main": "dist/index.js",
+	"scripts": {
+		"dev": "tsx watch --env-file=.env src/index.ts",
+		"build": "tsc",
+		"start": "node --env-file=.env dist/index.js",
+		"lint": "eslint .",
+		"lint:fix": "eslint . --fix",
+		"format": "prettier --write .",
+		"typecheck": "tsc --noEmit",
+		"db:generate": "prisma generate",
+		"db:migrate": "prisma migrate dev",
+		"db:studio": "prisma studio"
+	},
+	"dependencies": {
+		"@prisma/client": "^6.19.0",
+		"express": "^5.1.0",
+		"zod": "^4.1.13"
+	},
+	"devDependencies": {
+		"@eslint/js": "^9.39.5",
+		"@types/express": "^5.0.6",
+		"@types/node": "^24.9.0",
+		"eslint": "^9.39.5",
+		"eslint-config-prettier": "^10.1.8",
+		"eslint-plugin-simple-import-sort": "^14.0.0",
+		"prettier": "^3.9.6",
+		"prisma": "^6.19.0",
+		"tsx": "^4.21.0",
+		"typescript": "~5.9.2",
+		"typescript-eslint": "^8.67.0"
+	}
+}
