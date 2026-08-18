@@ -1,0 +1,239 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Visibility {
+  PUBLIC
+  FRIENDS
+  PRIVATE
+}
+
+model User {
+  id                String    @id @default(uuid())
+  email             String    @unique
+  passwordHash      String?
+  facebookConnected Boolean   @default(false)
+  googleConnected   Boolean   @default(false)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  deletedAt         DateTime? @default(now())
+
+  subscribed Boolean @default(false)
+
+  data      UserData?
+  following Follow[]  @relation("Following")
+  followers Follow[]  @relation("Followers")
+  //FRIENDS === FOLLOWING + FOLLOWER
+
+  ownedEvents           Event[]        @relation("EventOwners")
+  eventAttempted        Event[]        @relation("EventParticipants")
+  addedMusic            EventMusic[]
+  votes                 Votes[]
+  OwnedPlaylists        Playlist[]     @relation("PlaylistOwner")
+  likedPlaylist         Playlist[]     @relation()
+  invitations           Invitation[]
+  PlaylistCollaboration Playlist[]     @relation("PlaylistCollaboration")
+  refreshToken          RefreshToken[]
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model Playlist {
+  id        String   @id @default(uuid())
+  title     String
+  createdAt DateTime @default(now())
+
+  creatorId String
+  creator   User   @relation("PlaylistOwner", fields: [creatorId], references: [id])
+
+  collaboratorsId User[] @relation("PlaylistCollaboration")
+
+  invitations Invitation[]
+
+  likedBy User[]
+
+  music Music[]
+}
+
+model Invitation {
+  id String @id @default(uuid())
+
+  status          InvitationStatus
+  statusChangedAt DateTime         @default(now())
+
+  targetId String
+  target   User   @relation(fields: [targetId], references: [id], onDelete: Cascade)
+
+  eventId String?
+  event   Event?  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  playlistId String?
+  playlist   Playlist? @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+}
+
+model UserData {
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  emailVisibility Visibility @default(PUBLIC)
+  pfpUrl          String?
+  pfpVisibility   Visibility @default(PUBLIC)
+
+  firstName           String?
+  firstNameVisibility Visibility @default(PUBLIC)
+
+  lastName           String?
+  lastNameVisibility Visibility @default(FRIENDS)
+
+  dateOfBirth           DateTime?
+  dateOfBirthVisibility Visibility @default(PRIVATE)
+
+  city           String?
+  cityVisibility Visibility @default(FRIENDS)
+
+  musicPreference           MusicType[]
+  musicPreferenceVisibility Visibility  @default(FRIENDS)
+}
+
+enum MusicType {
+  POP
+  ROCK
+  METAL
+  PUNK
+  INDIE
+  ALTERNATIVE
+  HIP_HOP
+  RAP
+  RNB
+  SOUL
+  FUNK
+  DISCO
+  JAZZ
+  BLUES
+  CLASSICAL
+  OPERA
+  ELECTRONIC
+  HOUSE
+  TECHNO
+  TRANCE
+  DRUM_AND_BASS
+  DUBSTEP
+  AMBIENT
+  LOFI
+  REGGAE
+  DANCEHALL
+  AFROBEATS
+  LATIN
+  REGGAETON
+  SALSA
+  COUNTRY
+  FOLK
+  WORLD
+  KPOP
+  JPOP
+  SOUNDTRACK
+  GOSPEL
+  OTHER
+}
+
+model Follow {
+  id          String   @id @default(uuid())
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+
+  follower  User @relation("Following", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("Followers", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+  @@index([followingId])
+}
+
+model Music {
+  id     String @id @default(uuid())
+  title  String
+  author String
+
+  plays      EventMusic[]
+  playslists Playlist[]
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  REFUSED
+}
+
+model Event {
+  id     String   @id @default(uuid())
+  public Boolean? @default(true)
+
+  invitations Invitation[]
+  pfpUrl      String
+  title       String
+  description String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  owners       User[]       @relation("EventOwners")
+  participants User[]       @relation("EventParticipants")
+  playlist     EventMusic[]
+  votes        Votes[]
+
+  //MISSING 
+  // With the right license, the invited people are the only one who can vote.
+  // With the right license, the people located in a specific place for at a specific time (between 4 and 6PM for instance) will be able to vote.
+}
+
+model EventMusic {
+  id        String    @id @default(uuid())
+  eventId   String
+  musicId   String
+  playedAt  DateTime? @default(now())
+  addedById String
+
+  event   Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  music   Music @relation(fields: [musicId], references: [id], onDelete: Cascade)
+  addedBy User  @relation(fields: [addedById], references: [id])
+
+  votes Votes[]
+
+  @@index([eventId, playedAt])
+}
+
+enum VoteValue {
+  UP
+  DOWN
+}
+
+model Votes {
+  id    String    @id @default(uuid())
+  value VoteValue
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  eventId String
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  eventMusicId String
+  eventMusic   EventMusic @relation(fields: [eventMusicId], references: [id], onDelete: Cascade)
+}
