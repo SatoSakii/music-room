@@ -1,16 +1,7 @@
 import { Injectable, NotImplementedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
-import {
-	AuthResponseDto,
-	LoginDto,
-	LogoutDto,
-	MessageResponseDto,
-	RefreshDto,
-	SignupDto,
-	UserResponseDto,
-	VerifyDto,
-} from './dto';
+import { AuthResponseDto, MessageResponseDto, UserResponseDto } from './dto';
 
 @Injectable()
 export class AuthService {
@@ -19,29 +10,35 @@ export class AuthService {
 		private readonly jwtService: JwtService,
 	) {}
 
-	signup(dto: SignupDto): Promise<AuthResponseDto> {
-		void dto;
+	signup(
+		email: string,
+		password: string,
+		firstName: string,
+		lastName: string,
+		dateOfBirth: string,
+		city: string,
+	): Promise<AuthResponseDto> {
+		void { email, password, firstName, lastName, dateOfBirth, city };
 		throw new NotImplementedException();
 	}
 
-	login(dto: LoginDto): Promise<AuthResponseDto> {
-		void dto;
+	login(email: string, password: string): Promise<AuthResponseDto> {
+		void { email, password };
 		throw new NotImplementedException();
 	}
 
-	verify(dto: VerifyDto): Promise<MessageResponseDto> {
-		void dto;
+	verify(email: string, code: string): Promise<MessageResponseDto> {
+		void { email, code };
 		throw new NotImplementedException();
 	}
 
-	refresh(dto: RefreshDto): Promise<AuthResponseDto> {
-		void dto;
+	refresh(refreshToken: string): Promise<AuthResponseDto> {
+		void refreshToken;
 		throw new NotImplementedException();
 	}
 
-	logout(userId: string, dto: LogoutDto): Promise<MessageResponseDto> {
-		void userId;
-		void dto;
+	logout(userId: string, refreshToken: string): Promise<MessageResponseDto> {
+		void { userId, refreshToken };
 		throw new NotImplementedException();
 	}
 
