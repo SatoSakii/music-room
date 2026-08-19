@@ -2,8 +2,9 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider     = "prisma-client"
+  output       = "../generated/prisma"
+  moduleFormat = "cjs"
 }
 
 datasource db {
@@ -413,7 +414,6 @@ model Vote {
   @@unique([userId, eventMusicId])
   @@index([eventMusicId])
 }
-
 
 model Invitation {
   id String @id @default(uuid())
