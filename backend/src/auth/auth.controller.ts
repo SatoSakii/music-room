@@ -26,6 +26,8 @@ export class AuthController {
 			body.lastName,
 			body.dateOfBirth,
 			body.city,
+			body.musicPreference,
+			body.pfpUrl,
 		);
 	}
 

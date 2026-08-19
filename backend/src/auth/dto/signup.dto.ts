@@ -1,4 +1,19 @@
-import { IsDateString, IsEmail, IsString, Length, Matches, MaxLength } from 'class-validator';
+import {
+	ArrayMaxSize,
+	ArrayMinSize,
+	ArrayUnique,
+	IsArray,
+	IsDateString,
+	IsEmail,
+	IsEnum,
+	IsOptional,
+	IsString,
+	IsUrl,
+	Length,
+	Matches,
+	MaxLength,
+} from 'class-validator';
+import { MusicType } from '../../../generated/prisma/enums';
 
 export class SignupDto {
 	@IsEmail({}, { message: 'email invalide' })
@@ -26,4 +41,16 @@ export class SignupDto {
 	@IsString()
 	@Length(1, 100)
 	city!: string;
+
+	@IsArray()
+	@ArrayMinSize(3, { message: 'choisis au moins 3 genres musicaux' })
+	@ArrayMaxSize(10, { message: 'pas plus de 10 genres musicaux' })
+	@ArrayUnique({ message: 'genres musicaux en double' })
+	@IsEnum(MusicType, { each: true, message: 'genre musical inconnu' })
+	musicPreference!: MusicType[];
+
+	@IsOptional()
+	@IsUrl({ protocols: ['http', 'https'], require_protocol: true }, { message: 'pfpUrl invalide' })
+	@MaxLength(2048)
+	pfpUrl?: string;
 }
