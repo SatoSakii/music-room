@@ -1,0 +1,2 @@
+# Meme verification que la CI, mais uniquement sur les fichiers stages.
+cd backend && npx lint-staged

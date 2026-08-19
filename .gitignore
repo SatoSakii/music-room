@@ -47,3 +47,6 @@ yarn-error.*
 # env
 .env
 .env*.local
+
+# husky
+!.husky/
