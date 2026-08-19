@@ -257,16 +257,16 @@ model UserData {
   pfpUrl          String?
   pfpVisibility   Visibility @default(PUBLIC)
 
-  firstName           String?
+  firstName           String
   firstNameVisibility Visibility @default(PUBLIC)
 
-  lastName           String?
+  lastName           String
   lastNameVisibility Visibility @default(FRIENDS)
 
-  dateOfBirth           DateTime?
+  dateOfBirth           DateTime
   dateOfBirthVisibility Visibility @default(PRIVATE)
 
-  city           String?
+  city           String
   cityVisibility Visibility @default(FRIENDS)
 
   musicPreference           MusicType[]

@@ -4,7 +4,9 @@ export class UserResponseDto {
 	emailVerified!: boolean;
 	subscribed!: boolean;
 	createdAt!: Date;
-	firstName?: string | null;
-	lastName?: string | null;
+	firstName!: string;
+	lastName!: string;
+	dateOfBirth!: Date;
+	city!: string;
 	pfpUrl?: string | null;
 }

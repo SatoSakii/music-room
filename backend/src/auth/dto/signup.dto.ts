@@ -1,4 +1,4 @@
-import { IsEmail, IsOptional, IsString, Length, Matches, MaxLength } from 'class-validator';
+import { IsDateString, IsEmail, IsString, Length, Matches, MaxLength } from 'class-validator';
 
 export class SignupDto {
 	@IsEmail({}, { message: 'email invalide' })
@@ -12,13 +12,18 @@ export class SignupDto {
 	})
 	password!: string;
 
-	@IsOptional()
 	@IsString()
-	@MaxLength(50)
-	firstName?: string;
+	@Length(1, 50)
+	firstName!: string;
 
-	@IsOptional()
 	@IsString()
-	@MaxLength(50)
-	lastName?: string;
+	@Length(1, 50)
+	lastName!: string;
+
+	@IsDateString({}, { message: 'date de naissance invalide (format ISO attendu)' })
+	dateOfBirth!: string;
+
+	@IsString()
+	@Length(1, 100)
+	city!: string;
 }
