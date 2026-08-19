@@ -1,0 +1,12 @@
+{
+  "name": "music-room",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Racine du monorepo : outillage git partage (husky) uniquement.",
+  "scripts": {
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7"
+  }
+}

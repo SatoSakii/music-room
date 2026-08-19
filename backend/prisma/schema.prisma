@@ -1,11 +1,10 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider     = "prisma-client"
+  output       = "../generated/prisma"
+  moduleFormat = "cjs"
 }
 
 datasource db {
@@ -18,99 +17,50 @@ enum Visibility {
   PRIVATE
 }
 
-model User {
-  id                String    @id @default(uuid())
-  email             String    @unique
-  passwordHash      String?
-  facebookConnected Boolean   @default(false)
-  googleConnected   Boolean   @default(false)
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  deletedAt         DateTime? @default(now())
-
-  subscribed Boolean @default(false)
-
-  data      UserData?
-  following Follow[]  @relation("Following")
-  followers Follow[]  @relation("Followers")
-  //FRIENDS === FOLLOWING + FOLLOWER
-
-  ownedEvents           Event[]        @relation("EventOwners")
-  eventAttempted        Event[]        @relation("EventParticipants")
-  addedMusic            EventMusic[]
-  votes                 Votes[]
-  OwnedPlaylists        Playlist[]     @relation("PlaylistOwner")
-  likedPlaylist         Playlist[]     @relation()
-  invitations           Invitation[]
-  PlaylistCollaboration Playlist[]     @relation("PlaylistCollaboration")
-  refreshToken          RefreshToken[]
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  REFUSED
 }
 
-model RefreshToken {
-  id        String   @id @default(uuid())
-  tokenHash String   @unique
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  expiresAt DateTime
-  createdAt DateTime @default(now())
+enum VoteValue {
+  UP
+  DOWN
 }
 
-model Playlist {
-  id        String   @id @default(uuid())
-  title     String
-  createdAt DateTime @default(now())
-
-  creatorId String
-  creator   User   @relation("PlaylistOwner", fields: [creatorId], references: [id])
-
-  collaboratorsId User[] @relation("PlaylistCollaboration")
-
-  invitations Invitation[]
-
-  likedBy User[]
-
-  music Music[]
+enum VoteLicense {
+  EVERYONE
+  INVITED_ONLY
+  LOCATION_TIME
 }
 
-model Invitation {
-  id String @id @default(uuid())
-
-  status          InvitationStatus
-  statusChangedAt DateTime         @default(now())
-
-  targetId String
-  target   User   @relation(fields: [targetId], references: [id], onDelete: Cascade)
-
-  eventId String?
-  event   Event?  @relation(fields: [eventId], references: [id], onDelete: Cascade)
-
-  playlistId String?
-  playlist   Playlist? @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+enum PlaylistEditLicense {
+  EVERYONE
+  INVITED_ONLY
 }
 
-model UserData {
-  id     String @id @default(uuid())
-  userId String @unique
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+enum OAuthProvider {
+  GOOGLE
+  FACEBOOK
+}
 
-  emailVisibility Visibility @default(PUBLIC)
-  pfpUrl          String?
-  pfpVisibility   Visibility @default(PUBLIC)
+enum TokenType {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
+}
 
-  firstName           String?
-  firstNameVisibility Visibility @default(PUBLIC)
+enum Platform {
+  IOS
+  ANDROID
+  WEB
+  OTHER
+}
 
-  lastName           String?
-  lastNameVisibility Visibility @default(FRIENDS)
-
-  dateOfBirth           DateTime?
-  dateOfBirthVisibility Visibility @default(PRIVATE)
-
-  city           String?
-  cityVisibility Visibility @default(FRIENDS)
-
-  musicPreference           MusicType[]
-  musicPreferenceVisibility Visibility  @default(FRIENDS)
+enum MusicProvider {
+  DEEZER
+  SPOTIFY
+  YOUTUBE
+  LOCAL
 }
 
 enum MusicType {
@@ -154,6 +104,175 @@ enum MusicType {
   OTHER
 }
 
+model User {
+  id           String  @id @default(uuid())
+  email        String  @unique
+  passwordHash String?
+
+  emailVerifiedAt DateTime?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  subscribed Boolean @default(false)
+
+  data          UserData?
+  oauthAccounts OAuthAccount[]
+  refreshTokens RefreshToken[]
+  authTokens    AuthToken[]
+  devices       Device[]
+  actionLogs    ActionLog[]
+
+  following Follow[] @relation("Following")
+  followers Follow[] @relation("Followers")
+
+  ownedEvents     Event[]      @relation("EventOwners")
+  attendedEvents  Event[]      @relation("EventParticipants")
+  addedEventMusic EventMusic[]
+  votes           Vote[]
+
+  ownedPlaylists       Playlist[]      @relation("PlaylistOwner")
+  collaboratedPlaylist Playlist[]      @relation("PlaylistCollaboration")
+  likedPlaylists       Playlist[]      @relation("PlaylistLikes")
+  addedPlaylistTracks  PlaylistTrack[]
+
+  invitations         Invitation[] @relation("InvitationTarget")
+  sentInvitations     Invitation[] @relation("InvitationSender")
+  grantedDelegations  Delegation[] @relation("DelegationOwner")
+  receivedDelegations Delegation[] @relation("DelegationDelegate")
+
+  @@index([deletedAt])
+}
+
+model OAuthAccount {
+  id                String        @id @default(uuid())
+  provider          OAuthProvider
+  providerAccountId String
+  email             String?
+  createdAt         DateTime      @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@unique([provider, userId])
+  @@index([userId])
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  tokenHash String   @unique
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+
+  revokedAt DateTime?
+  userAgent String?
+  ipAddress String?
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  deviceId String?
+  device   Device? @relation(fields: [deviceId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model AuthToken {
+  id        String    @id @default(uuid())
+  type      TokenType
+  tokenHash String    @unique
+  createdAt DateTime  @default(now())
+  expiresAt DateTime
+  usedAt    DateTime?
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type])
+}
+
+model Device {
+  id        String   @id @default(uuid())
+  name      String
+  platform  Platform
+  osVersion String?
+  createdAt DateTime @default(now())
+  lastSeen  DateTime @default(now())
+
+  delegationEnabled Boolean @default(false)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  refreshTokens RefreshToken[]
+  delegations   Delegation[]
+
+  @@index([userId])
+}
+
+model Delegation {
+  id        String    @id @default(uuid())
+  createdAt DateTime  @default(now())
+  revokedAt DateTime?
+
+  deviceId String
+  device   Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  ownerId String
+  owner   User   @relation("DelegationOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+
+  delegateId String
+  delegate   User   @relation("DelegationDelegate", fields: [delegateId], references: [id], onDelete: Cascade)
+
+  @@unique([deviceId, delegateId])
+  @@index([delegateId])
+}
+
+model ActionLog {
+  id         String   @id @default(uuid())
+  action     String
+  platform   Platform
+  device     String
+  appVersion String
+  ipAddress  String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([createdAt])
+}
+
+model UserData {
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  emailVisibility Visibility @default(PUBLIC)
+  pfpUrl          String?
+  pfpVisibility   Visibility @default(PUBLIC)
+
+  firstName           String
+  firstNameVisibility Visibility @default(PUBLIC)
+
+  lastName           String
+  lastNameVisibility Visibility @default(FRIENDS)
+
+  dateOfBirth           DateTime
+  dateOfBirthVisibility Visibility @default(PRIVATE)
+
+  city           String
+  cityVisibility Visibility @default(FRIENDS)
+
+  musicPreference           MusicType[]
+  musicPreferenceVisibility Visibility  @default(FRIENDS)
+}
+
 model Follow {
   id          String   @id @default(uuid())
   followerId  String
@@ -172,68 +291,150 @@ model Music {
   title  String
   author String
 
-  plays      EventMusic[]
-  playslists Playlist[]
+  provider        MusicProvider
+  providerTrackId String
+  durationSec     Int?
+  coverUrl        String?
+  genre           MusicType?
+
+  plays  EventMusic[]
+  tracks PlaylistTrack[]
+
+  @@unique([provider, providerTrackId])
+  @@index([title])
 }
 
-enum InvitationStatus {
-  PENDING
-  ACCEPTED
-  REFUSED
+model Playlist {
+  id        String   @id @default(uuid())
+  title     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  isPublic    Boolean             @default(true)
+  editLicense PlaylistEditLicense @default(EVERYONE)
+
+  creatorId String
+  creator   User   @relation("PlaylistOwner", fields: [creatorId], references: [id])
+
+  collaborators User[] @relation("PlaylistCollaboration")
+  likedBy       User[] @relation("PlaylistLikes")
+
+  invitations Invitation[]
+  tracks      PlaylistTrack[]
+
+  @@index([creatorId])
+  @@index([isPublic])
+}
+
+model PlaylistTrack {
+  id String @id @default(uuid())
+
+  position Float
+
+  version Int @default(0)
+
+  addedAt DateTime @default(now())
+
+  playlistId String
+  playlist   Playlist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+
+  musicId String
+  music   Music  @relation(fields: [musicId], references: [id], onDelete: Cascade)
+
+  addedById String
+  addedBy   User   @relation(fields: [addedById], references: [id])
+
+  @@unique([playlistId, musicId])
+  @@index([playlistId, position])
+  @@index([addedById])
 }
 
 model Event {
-  id     String   @id @default(uuid())
-  public Boolean? @default(true)
-
-  invitations Invitation[]
-  pfpUrl      String
+  id          String   @id @default(uuid())
   title       String
   description String
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  pfpUrl      String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  owners       User[]       @relation("EventOwners")
-  participants User[]       @relation("EventParticipants")
-  playlist     EventMusic[]
-  votes        Votes[]
+  isPublic Boolean @default(true)
 
-  //MISSING 
-  // With the right license, the invited people are the only one who can vote.
-  // With the right license, the people located in a specific place for at a specific time (between 4 and 6PM for instance) will be able to vote.
+  voteLicense VoteLicense @default(EVERYONE)
+
+  latitude     Float?
+  longitude    Float?
+  radiusMeters Int?
+
+  voteWindowStart DateTime?
+  voteWindowEnd   DateTime?
+
+  owners       User[] @relation("EventOwners")
+  participants User[] @relation("EventParticipants")
+
+  queue       EventMusic[]
+  invitations Invitation[]
+
+  @@index([isPublic])
+  @@index([createdAt])
 }
 
 model EventMusic {
-  id        String    @id @default(uuid())
-  eventId   String
-  musicId   String
-  playedAt  DateTime? @default(now())
-  addedById String
+  id String @id @default(uuid())
 
-  event   Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  music   Music @relation(fields: [musicId], references: [id], onDelete: Cascade)
-  addedBy User  @relation(fields: [addedById], references: [id])
-
-  votes Votes[]
-
-  @@index([eventId, playedAt])
-}
-
-enum VoteValue {
-  UP
-  DOWN
-}
-
-model Votes {
-  id    String    @id @default(uuid())
-  value VoteValue
-
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  addedAt  DateTime  @default(now())
+  playedAt DateTime?
 
   eventId String
   event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
+  musicId String
+  music   Music  @relation(fields: [musicId], references: [id], onDelete: Cascade)
+
+  addedById String
+  addedBy   User   @relation(fields: [addedById], references: [id])
+
+  votes Vote[]
+
+  @@unique([eventId, musicId])
+  @@index([eventId, playedAt])
+}
+
+model Vote {
+  id        String    @id @default(uuid())
+  value     VoteValue
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   eventMusicId String
   eventMusic   EventMusic @relation(fields: [eventMusicId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, eventMusicId])
+  @@index([eventMusicId])
+}
+
+model Invitation {
+  id String @id @default(uuid())
+
+  status          InvitationStatus @default(PENDING)
+  statusChangedAt DateTime         @default(now())
+  createdAt       DateTime         @default(now())
+
+  targetId String
+  target   User   @relation("InvitationTarget", fields: [targetId], references: [id], onDelete: Cascade)
+
+  senderId String?
+  sender   User?   @relation("InvitationSender", fields: [senderId], references: [id], onDelete: SetNull)
+
+  eventId String?
+  event   Event?  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  playlistId String?
+  playlist   Playlist? @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+
+  @@unique([targetId, eventId])
+  @@unique([targetId, playlistId])
+  @@index([targetId, status])
 }
